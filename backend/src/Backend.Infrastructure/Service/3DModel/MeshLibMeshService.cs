@@ -7,12 +7,7 @@ namespace Backend.Infrastructure.Service.Mesh
 {
     internal class MeshLibMeshService : IMeshLibMeshService
     {
-        /// <summary>
-        /// Imports a 3D mesh from a file using MeshLib.
-        /// Supports STL, OBJ, PLY and other formats supported by MeshLib.
-        /// </summary>
-        /// <param name="filePath">Path to the mesh file.</param>
-        /// <returns>The loaded MeshLib mesh.</returns>
+        /// <inheritdoc/>
         public async Task<IMeshHandle> ImportMeshAsync(string filePath, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -27,6 +22,33 @@ namespace Backend.Infrastructure.Service.Mesh
 
             cancellationToken.ThrowIfCancellationRequested();
             return new MeshLibMeshHandle(mesh);
+        }
+        
+        /// <inheritdoc/>
+        public async Task<IMeshHandle> ImportMeshAsync(Stream stream, string fileExtension, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (stream == null || !stream.CanRead)
+                throw new ArgumentException("Stream must be readable.", nameof(stream));
+
+            var ext = string.IsNullOrWhiteSpace(fileExtension) ? ".bin"
+                : fileExtension.StartsWith('.') ? fileExtension : "." + fileExtension;
+
+            var tempPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ext);
+
+            try
+            {
+                await using (var fileStream = File.Create(tempPath))
+                    await stream.CopyToAsync(fileStream, cancellationToken);
+
+                return await ImportMeshAsync(tempPath, cancellationToken);
+            }
+            finally
+            {
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
+            }
         }
     }
 }
