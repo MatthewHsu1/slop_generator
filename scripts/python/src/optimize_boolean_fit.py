@@ -180,7 +180,7 @@ def optimize_boolean_difference_fit(
     best: OptimizationResult | None = None
     try:
         for rotation in _generate_euler_grid(rotation_step_degrees):
-            cutter_work.rotation_euler = rotation
+            target_work.rotation_euler = rotation
             bpy.context.view_layer.update()
 
             min_scale = _find_min_feasible_scale()
@@ -201,7 +201,7 @@ def optimize_boolean_difference_fit(
             raise RuntimeError("Could not find a feasible scale/rotation pair")
 
         target.scale = tuple(base * best.scale_multiplier for base in target_base_scale)
-        cutter.rotation_euler = best.rotation_radians
+        target.rotation_euler = best.rotation_radians
         bpy.context.view_layer.update()
 
         if apply_difference:
